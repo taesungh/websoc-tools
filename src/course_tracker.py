@@ -1,6 +1,4 @@
-import WebSoc_handler
-import fb_notifier
-import fbchat
+import WebSOC_handler
 
 import time
 
@@ -32,11 +30,6 @@ S_DEPARTMENTS = {' ALL', 'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO',
 'TAGALOG', 'TOX', 'UCDC', 'UNI AFF', 'UNI STU', 'UPPP', 'VIETMSE', 'VIS STD',
 'WOMN ST', 'WRITING'}
 
-
-#TAESUNG = '100007859343407'
-#SASHA = '100040755275062'
-#NAOMI
-
 INTERVAL = 30
 
 def systime(): return time.strftime('%X')
@@ -53,9 +46,8 @@ SOC_NAMES = {'Term': 'YearTerm', 'Show Comments': 'ShowComments',
     'Building': 'Bldg', 'Room': 'Room',}
 
 
-class Scraper:
-    def __init__(self, query: {str: str}, notifier: fb_notifier.FB_Notifier, check: callable):
-        self._notifier = notifier
+class CourseTracker:
+    def __init__(self, query: {str: str}, check: callable):
         self._flagged = False
         self._interval = INTERVAL
         self._query = query
@@ -70,7 +62,7 @@ class Scraper:
     def _get_course_data(self) -> None:
         #query_params = {'YearTerm': TERM, 'Dept': self._query['department'], 'CourseNum': self._query['course_number']}
         self._last_course_data = self._course_data
-        self._course_data = WebSoc_handler.get_data(self._query)
+        self._course_data = WebSoc_handler.get_course_data(self._query)
     
     
     def _check_listings(self) -> bool:
@@ -119,32 +111,13 @@ class Scraper:
     
     
     def _check_action(self) -> None:
-        if not self._check_listings() and self._flagged:
-            self._flagged = False
-            #self._interval = INTERVAL
-            message = f"{self._course_title} has closed."
-            send = self._send_message(message)
-            print(f'[{systime()}]', 'Course is no longer flagged.')
-        if self._check_listings() and not self._flagged:
-            self._flagged = True
-            #self._interval = INTERVAL / 10
-            message = f"{self._course_title} is open:" + '\n' + self._interpret_listings()
-            send = self._send_message(message)
-            print(f'[{systime()}]', 'Course has been flagged. Message sent.')
-            self._print_course_data()
-        elif self._last_course_data != self._course_data and self._flagged:
-            message = f"Openings for {self._course_title} have changed:" + '\n' + self._interpret_listings()
-            self._send_message(message)
-            print(f'[{systime()}]', 'Openings updated. Message sent.')
-            self._print_course_data()
-            
+        pass
     
     
     def _default_action(self) -> None:
-        #self._send_message(f"course {COURSE_TITLE} has {self._course_data['enr']} out of {self._course_data['max']} enrolled")
         pass
-
-
+    
+    
     def run_periodic(self) -> None:
         self._flagged = False
         while True:
@@ -158,35 +131,4 @@ class Scraper:
             except(WebSoc_handler.WebSocError):
                 print('WebSoc could not be reached')
             time.sleep(self._interval)
-
-
-def input_parameters() -> {str: str}:
-    def input_str(message: str, is_legal=(lambda x: True), error_message='') -> str:
-        while True:
-            response = input(message + ': ')
-            if is_legal(response):
-                return response
-            else:
-                print(error_message)
-    
-    department = input_str('Department', (lambda s: s in S_DEPARTMENTS), 'invalid department name')
-    course_number = input_str('Course Number')
-    course_code = input_str('Course Code')
-    return {'Dept': department, 'CourseNum': course_number, 'CourseCodes': course_code}
-
-
-if __name__ == '__main__':
-    try:
-        print('---------------WebSoc Scraper---------------')
-        notifier = fb_notifier.connect()
-        parameters = input_parameters()
-        sc = Scraper(parameters, notifier, lambda sec: sec['status'] == 'OPEN')
-        
-        try:
-            sc.run_periodic()
-        except KeyboardInterrupt:
-            print('All Done')
-        finally:
-            notifier.logout()
-    except(fbchat.FBchatException):
-        print('User could not be logged in.')
+#end CourseTracker
