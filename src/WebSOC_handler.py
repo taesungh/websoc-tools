@@ -29,6 +29,9 @@ S_DEPARTMENTS = {'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO', 'ARABIC',
 
 #https://webreg4.reg.uci.edu/cgi-bin/wramia?page=startUp&call=
 
+
+SOC_NAMES = ['YearTerm', 'ShowComments', 'ShowFinals', 'Breadth', 'Dept', 'CourseNum', 'Division', 'CourseCodes', 'InstrName', 'CourseTitle', 'ClassType', 'Units', 'Days', 'StartTime', 'EndTime', 'MaxCap', 'FullCourses', 'CancelledCourses', 'Bldg', 'Room']
+
 #RAW_HEADERS = ['code', 'type', 'sec', 'units', 'instructor', 'time', 'place',
 #    'final', 'max', 'enr', 'wl', 'req', 'nor', 'rstr',
 #    'textbooks', 'web', 'status']
@@ -107,17 +110,6 @@ def _parse_course_data(raw_page: str) -> [{str: str}]:
             #tr_data.update({v: tr('td').eq(k).text() for k, v in d_headers.items()})
             if 'time' in tr_data:
                 tr_data['time'] = ' '.join(tr_data['time'].split())
-            if 'wl' in tr_data and tr_data['wl'] == 'n/a':
-                tr_data['wl'] = -1
-            if 'enr' in tr_data and '/' in tr_data['enr']:
-                tr_data['enr'], _, tr_data['max'] = tr_data['enr'].split()
-            for header in ('code', 'max', 'enr', 'wl', 'req', 'nor'):
-                try:
-                    if header in tr_data:
-                        tr_data[header] = int(tr_data[header])
-                except(ValueError):
-                    raise WebSOCError
-            
             course_data.append(tr_data)
     return course_data
 
@@ -129,5 +121,5 @@ def get_course_data(query_params: {str, str}) -> [{str: str}]:
         raw_page = _pull_page(query_url)
         course_data = _parse_course_data(raw_page)
         return course_data
-    except(urllib.error.URLError):
-        raise WebSOCError
+    except urllib.error.URLError as e:
+        raise WebSOCError(e)

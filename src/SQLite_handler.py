@@ -20,22 +20,23 @@ class SQLDatabase:
 
 
 def console():
-    db = SQLDatabase(input('Database: '))
+    path = input('Database: ')
+    db = SQLDatabase(path)
     running = True
     while running:
-        command = input('Command: ')
+        command = input(f"{path}> ")
         if command == 'QUIT':
             running = False
         else:
             try:
-                result = db(command)
-                [print(item) for item in result]
+                [print(item) for item in db(command)]
             except(sqlite.ProgrammingError) as e:
                 print('An error occured, please try again.')
                 print(e)
             except(sqlite.OperationalError) as e:
                 print('The database could not handle the request.')
                 print(e)
+    db.close()
     print('Goodbye')
 
 

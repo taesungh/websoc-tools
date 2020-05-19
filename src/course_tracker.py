@@ -9,41 +9,9 @@ import time
 #COURSE_NUMBER = '6D'
 #COURSE_TITLE = DEPARTMENT + ' ' + COURSE_NUMBER
 
-S_DEPARTMENTS = {' ALL', 'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO',
-'ARABIC', 'ARMN', 'ART', 'ART HIS', 'ARTS', 'ARTSHUM', 'ASIANAM', 'BANA',
-'BATS', 'BIO SCI', 'BIOCHEM', 'BME', 'BSEMD', 'CAMPREC', 'CBE', 'CBEMS',
-'CEM', 'CHC/LAT', 'CHEM', 'CHINESE', 'CLASSIC', 'CLT&THY', 'COGS', 'COM LIT',
-'COMPSCI', 'CRITISM', 'CRM/LAW', 'CSE', 'DANCE', 'DERM', 'DEV BIO', 'DRAMA',
-'E ASIAN', 'EARTHSS', 'EAS', 'ECO EVO', 'ECON', 'ECPS', 'ED AFF', 'EDUC',
-'EECS', 'EHS', 'ENGLISH', 'ENGR', 'ENGRCEE', 'ENGRMAE', 'ENGRMSE', 'EPIDEM',
-'ER MED', 'EURO ST', 'FAM MED', 'FIN', 'FLM&MDA', 'FRENCH', 'GEN&SEX',
-'GERMAN', 'GLBL ME', 'GLBLCLT', 'GREEK', 'HEBREW', 'HINDI', 'HISTORY', 'HUMAN',
-'HUMARTS', 'I&C SCI', 'IN4MATX', 'INNO', 'INT MED', 'INTL ST', 'ITALIAN',
-'JAPANSE', 'KOREAN', 'LATIN', 'LAW', 'LINGUIS', 'LIT JRN', 'LPS', 'LSCI',
-'M&MG', 'MATH', 'MED', 'MED ED', 'MED HUM', 'MGMT', 'MGMT EP', 'MGMT FE',
-'MGMT HC', 'MGMTMBA', 'MGMTPHD', 'MIC BIO', 'MOL BIO', 'MPAC', 'MUSIC',
-'NET SYS', 'NEURBIO', 'NEUROL', 'NUR SCI', 'OB/GYN', 'OPHTHAL', 'PATH',
-'PED GEN', 'PEDS', 'PERSIAN', 'PHARM', 'PHILOS', 'PHRMSCI', 'PHY SCI',
-'PHYSICS', 'PHYSIO', 'PLASTIC', 'PM&R', 'POL SCI', 'PORTUG', 'PP&D', 'PSCI',
-'PSY BEH', 'PSYCH', 'PUB POL', 'PUBHLTH', 'RADIO', 'REL STD', 'ROTC', 'RUSSIAN',
-'SOC SCI', 'SOCECOL', 'SOCIOL', 'SPANISH', 'SPPS', 'STATS', 'SURGERY', 'SWE',
-'TAGALOG', 'TOX', 'UCDC', 'UNI AFF', 'UNI STU', 'UPPP', 'VIETMSE', 'VIS STD',
-'WOMN ST', 'WRITING'}
-
 INTERVAL = 30
 
 def systime(): return time.strftime('%X')
-
-SOC_NAMES = {'Term': 'YearTerm', 'Show Comments': 'ShowComments',
-    'Show Finals': 'ShowFinals', 'Breadth': 'Breadth',
-    'Department': 'Dept', 'Course Number': 'CourseNum',
-    'Course Level': 'Division', 'Course Code': 'CourseCodes',
-    'Instructor': 'InstrName', 'Title': 'CourseTitle',
-    'Course Type': 'ClassType', 'Units': 'Units',
-    'Days': 'Days', 'Starts After': 'StartTime', 'Ends Before': 'EndTime',
-    'Capacity': 'MaxCap', 'Courses Full Option': 'FullCourses',
-    'Cancelled Courses': 'CancelledCourses',
-    'Building': 'Bldg', 'Room': 'Room',}
 
 
 class CourseTracker:
@@ -62,7 +30,7 @@ class CourseTracker:
     def _get_course_data(self) -> None:
         #query_params = {'YearTerm': TERM, 'Dept': self._query['department'], 'CourseNum': self._query['course_number']}
         self._last_course_data = self._course_data
-        self._course_data = WebSoc_handler.get_course_data(self._query)
+        self._course_data = WebSOC_handler.get_course_data(self._query)
     
     
     def _check_listings(self) -> bool:
@@ -76,10 +44,6 @@ class CourseTracker:
                 reading += f"{section['type']} {section['sec']} - {section['enr']} enr of {section['max']} max"
                 reading += '\n'
         return reading
-    
-    
-    def _send_message(self, message: str) -> str:
-        return self._notifier(message)
     
     
     def _print_course_data(self) -> print:
@@ -128,7 +92,7 @@ class CourseTracker:
                 else:
                     self._check_action()
                     self._default_action()
-            except(WebSoc_handler.WebSocError):
-                print('WebSoc could not be reached')
+            except(WebSOC_handler.WebSOCError):
+                print('WebSOC could not be reached')
             time.sleep(self._interval)
 #end CourseTracker

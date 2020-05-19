@@ -1,4 +1,5 @@
 from course_tracker import CourseTracker
+import WebSOC_handler as soc
 import fb_notifier
 import fbchat
 
@@ -70,7 +71,7 @@ def input_parameters() -> {str: str}:
             else:
                 print(error_message)
     
-    department = input_str('Department', (lambda s: s in S_DEPARTMENTS), 'invalid department name')
+    department = input_str('Department', (lambda s: s in soc.S_DEPARTMENTS), 'invalid department name')
     course_number = input_str('Course Number')
     course_code = input_str('Course Code')
     return {'Dept': department, 'CourseNum': course_number, 'CourseCodes': course_code}
