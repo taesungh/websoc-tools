@@ -5,6 +5,28 @@ from pyquery import PyQuery as pq
 WEBSOC_URL = 'https://www.reg.uci.edu/perl/WebSoc/listing'
 TERM = '2020-14'
 
+S_DEPARTMENTS = {'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO', 'ARABIC',
+    'ARMN', 'ART', 'ART HIS', 'ARTS', 'ARTSHUM', 'ASIANAM', 'BANA', 'BATS',
+    'BIO SCI', 'BIOCHEM', 'BME', 'BSEMD', 'CAMPREC', 'CBE', 'CBEMS', 'CEM',
+    'CHC/LAT', 'CHEM', 'CHINESE', 'CLASSIC', 'CLT&THY', 'COGS', 'COM LIT',
+    'COMPSCI', 'CRITISM', 'CRM/LAW', 'CSE', 'DANCE', 'DERM', 'DEV BIO',
+    'DRAMA', 'E ASIAN', 'EARTHSS', 'EAS', 'ECO EVO', 'ECON', 'ECPS', 'ED AFF',
+    'EDUC', 'EECS', 'EHS', 'ENGLISH', 'ENGR', 'ENGRCEE', 'ENGRMAE', 'ENGRMSE',
+    'EPIDEM', 'ER MED', 'EURO ST', 'FAM MED', 'FIN', 'FLM&MDA', 'FRENCH',
+    'GEN&SEX', 'GERMAN', 'GLBL ME', 'GLBLCLT', 'GREEK', 'HEBREW', 'HINDI',
+    'HISTORY', 'HUMAN', 'HUMARTS', 'I&C SCI', 'IN4MATX', 'INNO', 'INT MED',
+    'INTL ST', 'ITALIAN', 'JAPANSE', 'KOREAN', 'LATIN', 'LAW', 'LINGUIS',
+    'LIT JRN', 'LPS', 'LSCI', 'M&MG', 'MATH', 'MED', 'MED ED', 'MED HUM',
+    'MGMT', 'MGMT EP', 'MGMT FE', 'MGMT HC', 'MGMTMBA', 'MGMTPHD', 'MIC BIO',
+    'MOL BIO', 'MPAC', 'MUSIC', 'NET SYS', 'NEURBIO', 'NEUROL', 'NUR SCI',
+    'OB/GYN', 'OPHTHAL', 'PATH', 'PED GEN', 'PEDS', 'PERSIAN', 'PHARM',
+    'PHILOS', 'PHRMSCI', 'PHY SCI', 'PHYSICS', 'PHYSIO', 'PLASTIC', 'PM&R',
+    'POL SCI', 'PORTUG', 'PP&D', 'PSCI', 'PSY BEH', 'PSYCH', 'PUB POL',
+    'PUBHLTH', 'RADIO', 'REL STD', 'ROTC', 'RUSSIAN', 'SOC SCI', 'SOCECOL',
+    'SOCIOL', 'SPANISH', 'SPPS', 'STATS', 'SURGERY', 'SWE', 'TAGALOG', 'TOX',
+    'UCDC', 'UNI AFF', 'UNI STU', 'UPPP', 'VIETMSE', 'VIS STD', 'WOMN ST',
+    'WRITING'}
+
 #https://webreg4.reg.uci.edu/cgi-bin/wramia?page=startUp&call=
 
 #RAW_HEADERS = ['code', 'type', 'sec', 'units', 'instructor', 'time', 'place',
@@ -21,6 +43,7 @@ class WebSOCError(Exception):
 
 
 def _build_query_url(query_params: {str: str}) -> str:
+    """docstring for _build_query_url"""
     default_params = {'YearTerm': TERM, 'ShowFinals': 1}
     # query_params can override default
     query_params = {**default_params, **query_params}
@@ -28,6 +51,7 @@ def _build_query_url(query_params: {str: str}) -> str:
 
 
 def _pull_page(url: str) -> str:
+    """docstring for _pull_page"""
     response = None
     try:
         response = urllib.request.urlopen(url)
@@ -40,42 +64,70 @@ def _pull_page(url: str) -> str:
 
 
 def _parse_course_data(raw_page: str) -> [{str: str}]:
-    # raw_listings = []
-#     for line in raw_page:
-#         if 'valign="top"' in line and 'bgcolor="#fff0ff"' not in line:
-#             raw_listings.append(line.strip())
-#     if not raw_listings:
-#         return dict()
-#
-#     parsed_data = []
-#     for listing in raw_listings:
-#         ls = pq(listing)
-#         data = {k: ls('td').eq(v).text() for k, v in HEADERS.items()}
-#         parsed_data.append(data)
-#     return parsed_data
-    try:
-        d = pq(raw_page)('.course-list')
-        q_listings = d("tr[valign*='top']:not([bgcolor='#fff0ff'])")
-        #credits to Tristan Jogminas
-    except(ParserError):
-        return dict()
+    """docstring for _parse_course_data"""
+    # try:
+    #     d = pq(raw_page)('.course-list')
+    #     q_listings = d("tr[valign*='top']:not([bgcolor='#fff0ff'])")
+    #     #credits to Tristan Jogminas
+    # except(ParserError):
+    #     return dict()
+    #
+    # l_headers = d('th').contents()
+    # d_headers = {item.lower(): l_headers.index(item) for item in l_headers}
+    # course_data = []
+    # for q_list in q_listings.items():
+    #     data = {k: q_list('td').eq(v).text() for k, v in d_headers.items()}
+    #     if 'time' in data:
+    #         data['time'] = ' '.join(data['time'].split())
+    #     course_data.append(data)
+    # return course_data
     
-    l_headers = d('th').contents()
-    d_headers = {item.lower(): l_headers.index(item) for item in l_headers}
+    d = pq(raw_page)('.course-list')
+    #adapted from Tristan Jogminas
+    tr_listings = d("tr[valign*='top'], tr[align*=left]")
+    
+    l_headers = []
+    dept = ''
+    num = ''
+    title = ''
+    
     course_data = []
-    for q_list in q_listings.items():
-        data = {k: q_list('td').eq(v).text() for k, v in d_headers.items()}
-        if 'time' in data:
-            data['time'] = ' '.join(data['time'].split())
-        course_data.append(data)
+    for tr in tr_listings.items():
+        tr_type = len(tr('td'))
+        if tr_type == 1: # course title
+            dept = tr('td').contents()[0].strip().split('\xa0')[0][:-1]
+            num = tr('td').contents()[0].strip().split('\xa0')[1][1:]
+            title = tr.text().split('\n')[1]
+        elif tr_type == 0: # table headers
+            l_headers = [header.lower() for header in tr('th').contents()]
+            #d_headers = dict(enumerate(l_headers, 0))
+        else: # course listing
+            tr_data = {'dept': dept.upper(), 'num': num, 'title': title}
+            tr_data.update((th, td.text()) for th, td in zip(l_headers, tr('td').items()))
+            #tr_data.update({v: tr('td').eq(k).text() for k, v in d_headers.items()})
+            if 'time' in tr_data:
+                tr_data['time'] = ' '.join(tr_data['time'].split())
+            if 'wl' in tr_data and tr_data['wl'] == 'n/a':
+                tr_data['wl'] = -1
+            if 'enr' in tr_data and '/' in tr_data['enr']:
+                tr_data['enr'], _, tr_data['max'] = tr_data['enr'].split()
+            for header in ('code', 'max', 'enr', 'wl', 'req', 'nor'):
+                try:
+                    if header in tr_data:
+                        tr_data[header] = int(tr_data[header])
+                except(ValueError):
+                    raise WebSOCError
+            
+            course_data.append(tr_data)
     return course_data
 
 
 def get_course_data(query_params: {str, str}) -> [{str: str}]:
+    """docstring for get_course_data"""
     try:
         query_url = _build_query_url(query_params)
         raw_page = _pull_page(query_url)
         course_data = _parse_course_data(raw_page)
         return course_data
     except(urllib.error.URLError):
-        raise WebSocError
+        raise WebSOCError
