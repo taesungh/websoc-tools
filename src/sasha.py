@@ -15,22 +15,22 @@ class Sasha(CourseTracker):
     def __init__(self, query: {str: str}, notifier: fb_notifier.FB_Notifier, check: callable):
         self._notifier = notifier
         super().__init__(query, check)
-    
-    
+
+
     def _send_message(self, message: str) -> str:
         return self._notifier(message)
-    
-    
+
+
     def _check_action(self) -> None:
         if not self._check_listings() and self._flagged:
             self._flagged = False
-            #self._interval = INTERVAL
+            # self._interval = INTERVAL
             message = f"{self._course_title} has closed."
             send = self._send_message(message)
             print(f'[{systime()}]', 'Course is no longer flagged.')
         if self._check_listings() and not self._flagged:
             self._flagged = True
-            #self._interval = INTERVAL / 10
+            # self._interval = INTERVAL / 10
             message = f"{self._course_title} is open:" + '\n' + self._interpret_listings()
             send = self._send_message(message)
             print(f'[{systime()}]', 'Course has been flagged. Message sent.')
@@ -40,13 +40,13 @@ class Sasha(CourseTracker):
             self._send_message(message)
             print(f'[{systime()}]', 'Openings updated. Message sent.')
             self._print_course_data()
-    
-    
+
+
     def _default_action(self) -> None:
-        #self._send_message(f"course {COURSE_TITLE} has {self._course_data['enr']} out of {self._course_data['max']} enrolled")
+        # self._send_message(f"course {COURSE_TITLE} has {self._course_data['enr']} out of {self._course_data['max']} enrolled")
         pass
-    
-    
+
+
     def run_periodic(self) -> None:
         self._flagged = False
         while True:
@@ -70,7 +70,7 @@ def input_parameters() -> {str: str}:
                 return response
             else:
                 print(error_message)
-    
+
     department = input_str('Department', (lambda s: s in soc.S_DEPARTMENTS), 'invalid department name')
     course_number = input_str('Course Number')
     course_code = input_str('Course Code')

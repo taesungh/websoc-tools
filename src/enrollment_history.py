@@ -10,21 +10,24 @@ def timestamp() -> datetime:
     return now - timedelta(microseconds=now.microsecond)
 
 def log(message: str) -> print:
+    """prints message with timestamp"""
     print(f"[{timestamp()}] {message}")
 
 def sleep(dt: timedelta) -> 'sleep':
+    """pauses execution for the given time"""
     if (type(dt) == timedelta):
         dt = dt.total_seconds()
     time.sleep(dt)
 
+# opposite of epoch
 CHOPE = datetime.max
 
 T_DATA = timedelta(hours=1)
 QUERY_INTERVAL = max(timedelta(seconds=2), T_DATA / len(soc.S_DEPARTMENTS) - timedelta(seconds=2))
 T_PING = timedelta(seconds=60)
-TERM = '2020-92'
+TERM = '2020-92'    # for Fall 2020 term, enrollment occuring in Spring 2020
 
-#DATABASE = 'spring-2020.db'
+# DATABASE = 'fall-2020.db'
 
 l_headers_static = ['dept', 'num', 'title', 'code', 'type', 'sec', 'units', 'instructor', 'time', 'place', 'final']
 l_headers_live = ['code', 'max', 'enr', 'wl', 'req', 'nor', 'rstr', 'status']
@@ -33,13 +36,14 @@ l_headers_default = ['dept', 'num', 'title', 'code', 'type', 'sec', 'units', 'in
 
 
 class EnrollmentHistory:
+    """module to query WebSOC and store historical results in SQL database"""
     def __init__(self, database: 'path', term: str):
         """docstring for %s"""
         self._db = SQLDatabase(database)
         self._term = term
         self._initialize_tables()
-    
-    
+
+
     def _initialize_tables(self) -> None:
         """docstring for _initialize_tables"""
         db = self._db
@@ -72,7 +76,7 @@ class EnrollmentHistory:
                         start_date date NOT NULL,
                         end_date date NOT NULL
                     )''')
-        
+
         pragma_cinfo = [(0, 'dept', 'text', 1, None, 0),
                         (1, 'num', 'text', 1, None, 0),
                         (2, 'title', 'text', 0, None, 0),
@@ -101,10 +105,10 @@ class EnrollmentHistory:
         if list(db('''PRAGMA table_info(EnrollmentInfo)''')) != pragma_einfo:
             raise ValueError('table EnrollmentInfo is not in the correct format')
     # end _initialize_tables
-    
-    
+
+
     def _get_course_data(self, department: str) -> [dict]:
-        """docstring for _get_course_data"""
+        """retrieves course data and sanitizes it for database usage"""
         query_params = {'YearTerm': self._term, 'Dept': department}
         while True:
             try:
@@ -115,8 +119,8 @@ class EnrollmentHistory:
                     # entries like "off(x)" indicate the department turned off the course waitlist;
                     elif 'wl' in course and 'off' in course['wl']:
                         course['wl'] = -int(course['wl'][4:-1])
-                    
-                    # entiers like "section / joint" show enrollment totals for cross-listed courses
+
+                    # entries like "section / joint" show enrollment totals for cross-listed courses
                     if 'enr' in course and '/' in course['enr']:
                         course['enr'], _, course['max'] = course['enr'].split()
                     for header in ('code', 'max', 'enr', 'wl', 'req', 'nor'):
@@ -134,10 +138,10 @@ class EnrollmentHistory:
                 print('Other error encountered')
                 print(e)
                 sleep(QUERY_INTERVAL)
-    
-    
+
+
     def _update_static_entry(self, course: dict) -> bool:
-        """docstring for _update_static_entry"""
+        """updates static entries in database using given course data"""
         code = course['code']
         now = timestamp()
         try:
@@ -149,7 +153,7 @@ class EnrollmentHistory:
                                             # trim start_date and end_date
         except StopIteration:
             entry_static = tuple()
-        
+
         course_static = tuple(course.get(h, None) for h in l_headers_static)
         if entry_static != course_static:
             self._db(f'''UPDATE CourseInfo
@@ -165,10 +169,10 @@ class EnrollmentHistory:
             return True
         return False
     # end _update_static_entry
-    
-    
+
+
     def _update_live_entry(self, course: dict) -> bool:
-        """docstring for _update_live_entry"""
+        """updates live entries in database using given course data"""
         code = course['code']
         now = timestamp()
         try:
@@ -180,7 +184,7 @@ class EnrollmentHistory:
                                             # trim start_date and end_date
         except StopIteration:
             entry_live = tuple()
-        
+
         course_live = tuple(course.get(h, None) for h in l_headers_live)
         if entry_live != course_live:
             self._db(f'''UPDATE EnrollmentInfo
@@ -196,10 +200,10 @@ class EnrollmentHistory:
             return True
         return False
     # end _update_live_entry
-    
-    
+
+
     def clean_up_removed_entries(self, course_data: [dict], department: str):
-        """docstring for clean_up_removed_entries"""
+        """purges courses that were removed from WebSOC listings"""
         now = timestamp()
         codes_data = {course['code'] for course in course_data}
         db = self._db
@@ -222,17 +226,17 @@ class EnrollmentHistory:
                                 AND ? < end_date
                             ''', now, code, now, now)
             log(f" >> Course {code} was removed from {department}")
-        #n_removed = len(codes_ci - codes_data)
-        #if n_removed > 0:
-        #    log(f"{n_removed} courses were removed from {department}")
-    
-    
-    
+        # n_removed = len(codes_ci - codes_data)
+        # if n_removed > 0:
+        #     log(f"{n_removed} courses were removed from {department}")
+
+
+
     def update_data(self, departments: set=soc.S_DEPARTMENTS) -> None:
-        """docstring for update_data"""
+        """updates database with current WebSOC entries of given departments"""
         n_updates = 0
         n_courses = 0
-        
+
         for department in departments:
             course_data = self._get_course_data(department)
             n_update = 0
@@ -247,22 +251,23 @@ class EnrollmentHistory:
         
         log(f"{n_updates} of {n_courses} courses in total have been updated.")
     # end update_data
-    
-    
-    def get_data(self, params: dict, columns: [str]=l_headers_default, time: datetime=timestamp()):
-        """docstring for get_data"""
+
+
+    def get_data(self, params: dict, columns: [str]=l_headers_default, time: datetime=timestamp()) -> [(int or str)]:
+        """returns a database query specified by parameters"""
         if not all(param in l_headers_default for param in params.keys()):
             raise ValueError
         if not all(col in l_headers_default for col in columns):
             raise ValueError
-        
+
+        # sanitize input columns since two tables are inner joined on 'code'
         qcolumns = list(columns)
         if 'code' in qcolumns:
             qcolumns[qcolumns.index('code')] = 'CourseInfo.code'
         qparams = dict(params)
         if 'code' in qparams:
             qparams['CourseInfo.code'] = qparams.pop('code')
-        
+
         return self._db(f'''SELECT {', '.join(qcolumns)} FROM
                             CourseInfo INNER JOIN EnrollmentInfo
                             ON CourseInfo.code == EnrollmentInfo.code
@@ -273,12 +278,11 @@ class EnrollmentHistory:
                             AND ? < EnrollmentInfo.end_date''',
                             *(qparams.values()), *((time,) * 4))
     # end get_data
-    
-    
+
+
     def close(self) -> None:
-        """docstring for close"""
+        """closes the database"""
         self._db.close()
-    
 # end EnrollmentHistory
 
 
@@ -294,7 +298,7 @@ def main() -> None:
                 eh._db._connection.commit()
             sleep(T_PING)
     except(KeyboardInterrupt):
-        pass
+        print('Stopping enrollment history runner')
     finally:
         print('Exiting database')
         eh.close()

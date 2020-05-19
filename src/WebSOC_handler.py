@@ -46,20 +46,19 @@ class WebSOCError(Exception):
 
 
 def _build_query_url(query_params: {str: str}) -> str:
-    """docstring for _build_query_url"""
+    """returns qualified url to access WebSOC with the specified parameters"""
     default_params = {'YearTerm': TERM, 'ShowFinals': 1}
-    # query_params can override default
+    # query_params can override default_params
     query_params = {**default_params, **query_params}
     return WEBSOC_URL + '?' + urllib.parse.urlencode(query_params)
 
 
 def _pull_page(url: str) -> str:
-    """docstring for _pull_page"""
+    """retrieves the raw page at the given url"""
     response = None
     try:
         response = urllib.request.urlopen(url)
         raw_page = response.read().decode(encoding = 'utf-8')
-        #raw_lines = raw_text.split('\n')
         return raw_page
     finally:
         if response != None:
@@ -67,7 +66,7 @@ def _pull_page(url: str) -> str:
 
 
 def _parse_course_data(raw_page: str) -> [{str: str}]:
-    """docstring for _parse_course_data"""
+    """converts WebSOC page into course listings"""
     # try:
     #     d = pq(raw_page)('.course-list')
     #     q_listings = d("tr[valign*='top']:not([bgcolor='#fff0ff'])")
@@ -84,30 +83,31 @@ def _parse_course_data(raw_page: str) -> [{str: str}]:
     #         data['time'] = ' '.join(data['time'].split())
     #     course_data.append(data)
     # return course_data
-    
+
     d = pq(raw_page)('.course-list')
-    #adapted from Tristan Jogminas
+    # adapted from Tristan Jogminas
     tr_listings = d("tr[valign*='top'], tr[align*=left]")
-    
+
     l_headers = []
     dept = ''
     num = ''
     title = ''
-    
+
     course_data = []
     for tr in tr_listings.items():
         tr_type = len(tr('td'))
         if tr_type == 1: # course title
+            # clean up multi-line nbsp formatting from WebSOC
             dept = tr('td').contents()[0].strip().split('\xa0')[0][:-1]
             num = tr('td').contents()[0].strip().split('\xa0')[1][1:]
             title = tr.text().split('\n')[1]
         elif tr_type == 0: # table headers
             l_headers = [header.lower() for header in tr('th').contents()]
-            #d_headers = dict(enumerate(l_headers, 0))
+            # d_headers = dict(enumerate(l_headers, 0))
         else: # course listing
             tr_data = {'dept': dept.upper(), 'num': num, 'title': title}
             tr_data.update((th, td.text()) for th, td in zip(l_headers, tr('td').items()))
-            #tr_data.update({v: tr('td').eq(k).text() for k, v in d_headers.items()})
+            # tr_data.update({v: tr('td').eq(k).text() for k, v in d_headers.items()})
             if 'time' in tr_data:
                 tr_data['time'] = ' '.join(tr_data['time'].split())
             course_data.append(tr_data)
@@ -115,7 +115,7 @@ def _parse_course_data(raw_page: str) -> [{str: str}]:
 
 
 def get_course_data(query_params: {str, str}) -> [{str: str}]:
-    """docstring for get_course_data"""
+    """retrieves course data specified by parameters from WebSOC"""
     try:
         query_url = _build_query_url(query_params)
         raw_page = _pull_page(query_url)
