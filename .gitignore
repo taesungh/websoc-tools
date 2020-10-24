@@ -1,0 +1,8 @@
+# dependencies
+/bin
+/include
+/lib
+pyvenv.cfg
+
+# misc
+.DS_Store
