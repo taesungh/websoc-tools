@@ -1,31 +1,34 @@
 import urllib.parse
 import urllib.request
+import lxml
 from pyquery import PyQuery as pq
 
 WEBSOC_URL = 'https://www.reg.uci.edu/perl/WebSoc/listing'
-TERM = '2020-14'
+TERM = '2021-03'
 
-S_DEPARTMENTS = {'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO', 'ARABIC',
-    'ARMN', 'ART', 'ART HIS', 'ARTS', 'ARTSHUM', 'ASIANAM', 'BANA', 'BATS',
-    'BIO SCI', 'BIOCHEM', 'BME', 'BSEMD', 'CAMPREC', 'CBE', 'CBEMS', 'CEM',
-    'CHC/LAT', 'CHEM', 'CHINESE', 'CLASSIC', 'CLT&THY', 'COGS', 'COM LIT',
-    'COMPSCI', 'CRITISM', 'CRM/LAW', 'CSE', 'DANCE', 'DERM', 'DEV BIO',
-    'DRAMA', 'E ASIAN', 'EARTHSS', 'EAS', 'ECO EVO', 'ECON', 'ECPS', 'ED AFF',
-    'EDUC', 'EECS', 'EHS', 'ENGLISH', 'ENGR', 'ENGRCEE', 'ENGRMAE', 'ENGRMSE',
+S_DEPARTMENTS = {
+    'AC ENG', 'AFAM', 'ANATOMY', 'ANESTH', 'ANTHRO', 'ARABIC', 'ARMN', 'ART',
+    'ART HIS', 'ARTS', 'ARTSHUM', 'ASIANAM', 'BANA', 'BATS', 'BIO SCI',
+    'BIOCHEM', 'BME', 'BSEMD', 'CAMPREC', 'CBE', 'CBEMS', 'CEM', 'CHC/LAT',
+    'CHEM', 'CHINESE', 'CLASSIC', 'CLT&THY', 'COGS', 'COM LIT', 'COMPSCI',
+    'CRITISM', 'CRM/LAW', 'CSE', 'DANCE', 'DERM', 'DEV BIO', 'DRAMA',
+    'E ASIAN', 'EARTHSS', 'EAS', 'ECO EVO', 'ECON', 'ECPS', 'ED AFF', 'EDUC',
+    'EECS', 'EHS', 'ENGLISH', 'ENGR', 'ENGRCEE', 'ENGRMAE', 'ENGRMSE',
     'EPIDEM', 'ER MED', 'EURO ST', 'FAM MED', 'FIN', 'FLM&MDA', 'FRENCH',
     'GEN&SEX', 'GERMAN', 'GLBL ME', 'GLBLCLT', 'GREEK', 'HEBREW', 'HINDI',
     'HISTORY', 'HUMAN', 'HUMARTS', 'I&C SCI', 'IN4MATX', 'INNO', 'INT MED',
-    'INTL ST', 'ITALIAN', 'JAPANSE', 'KOREAN', 'LATIN', 'LAW', 'LINGUIS',
-    'LIT JRN', 'LPS', 'LSCI', 'M&MG', 'MATH', 'MED', 'MED ED', 'MED HUM',
-    'MGMT', 'MGMT EP', 'MGMT FE', 'MGMT HC', 'MGMTMBA', 'MGMTPHD', 'MIC BIO',
-    'MOL BIO', 'MPAC', 'MUSIC', 'NET SYS', 'NEURBIO', 'NEUROL', 'NUR SCI',
-    'OB/GYN', 'OPHTHAL', 'PATH', 'PED GEN', 'PEDS', 'PERSIAN', 'PHARM',
-    'PHILOS', 'PHRMSCI', 'PHY SCI', 'PHYSICS', 'PHYSIO', 'PLASTIC', 'PM&R',
-    'POL SCI', 'PORTUG', 'PP&D', 'PSCI', 'PSY BEH', 'PSYCH', 'PUB POL',
-    'PUBHLTH', 'RADIO', 'REL STD', 'ROTC', 'RUSSIAN', 'SOC SCI', 'SOCECOL',
-    'SOCIOL', 'SPANISH', 'SPPS', 'STATS', 'SURGERY', 'SWE', 'TAGALOG', 'TOX',
-    'UCDC', 'UNI AFF', 'UNI STU', 'UPPP', 'VIETMSE', 'VIS STD', 'WOMN ST',
-    'WRITING'}
+    'INTL ST', 'IRAN', 'ITALIAN', 'JAPANSE', 'KOREAN', 'LATIN', 'LAW',
+    'LINGUIS', 'LIT JRN', 'LPS', 'LSCI', 'M&MG', 'MATH', 'MED', 'MED ED',
+    'MED HUM', 'MGMT', 'MGMT EP', 'MGMT FE', 'MGMT HC', 'MGMTMBA', 'MGMTPHD',
+    'MIC BIO', 'MOL BIO', 'MPAC', 'MSE', 'MUSIC', 'NET SYS', 'NEURBIO',
+    'NEUROL', 'NUR SCI', 'OB/GYN', 'OPHTHAL', 'PATH', 'PED GEN', 'PEDS',
+    'PERSIAN', 'PHARM', 'PHILOS', 'PHRMSCI', 'PHY SCI', 'PHYSICS', 'PHYSIO',
+    'PLASTIC', 'PM&R', 'POL SCI', 'PORTUG', 'PP&D', 'PSCI', 'PSY BEH',
+    'PSYCH', 'PUB POL', 'PUBHLTH', 'RADIO', 'REL STD', 'ROTC', 'RUSSIAN',
+    'SOC SCI', 'SOCECOL', 'SOCIOL', 'SPANISH', 'SPPS', 'STATS', 'SURGERY',
+    'SWE', 'TAGALOG', 'TOX', 'UCDC', 'UNI AFF', 'UNI STU', 'UPPP', 'VIETMSE',
+    'VIS STD', 'WOMN ST', 'WRITING'
+}
 
 #https://webreg4.reg.uci.edu/cgi-bin/wramia?page=startUp&call=
 
@@ -84,7 +87,11 @@ def _parse_course_data(raw_page: str) -> [{str: str}]:
     #     course_data.append(data)
     # return course_data
 
-    d = pq(raw_page)('.course-list')
+    try:
+        d = pq(raw_page)('.course-list')
+    except lxml.etree.ParserError as e:
+        raise WebSOCError(e)
+
     # adapted from Tristan Jogminas
     tr_listings = d("tr[valign*='top'], tr[align*=left]")
 

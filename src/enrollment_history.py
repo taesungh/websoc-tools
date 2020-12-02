@@ -13,7 +13,7 @@ def log(message: str) -> print:
     """prints message with timestamp"""
     print(f"[{timestamp()}] {message}")
 
-def sleep(dt: timedelta) -> 'sleep':
+def sleep(dt: int or timedelta) -> 'sleep':
     """pauses execution for the given time"""
     if (type(dt) == timedelta):
         dt = dt.total_seconds()
@@ -25,9 +25,9 @@ CHOPE = datetime.max
 T_DATA = timedelta(hours=1)
 QUERY_INTERVAL = max(timedelta(seconds=2), T_DATA / len(soc.S_DEPARTMENTS) - timedelta(seconds=2))
 T_PING = timedelta(seconds=60)
-TERM = '2020-92'    # for Fall 2020 term, enrollment occuring in Spring 2020
+# TERM = '2020-92'    # for Fall 2020 term, enrollment occuring in Spring 2020
+# TERM = '2021-03'    # for Winter 2021 term, enrollment occuring in Fall 2020
 
-# DATABASE = 'fall-2020.db'
 
 l_headers_static = ['dept', 'num', 'title', 'code', 'type', 'sec', 'units', 'instructor', 'time', 'place', 'final']
 l_headers_live = ['code', 'max', 'enr', 'wl', 'req', 'nor', 'rstr', 'status']
@@ -134,7 +134,7 @@ class EnrollmentHistory:
                 print('Encountered an error when attempting to reach WebSOC')
                 print(e)
                 sleep(QUERY_INTERVAL)
-            except Error as e:
+            except Exception as e:
                 print('Other error encountered')
                 print(e)
                 sleep(QUERY_INTERVAL)
@@ -288,7 +288,7 @@ class EnrollmentHistory:
 
 def main() -> None:
     """docstring for main"""
-    eh = EnrollmentHistory(input('Database: '), TERM)
+    eh = EnrollmentHistory(input('Database: '), input('Term: '))
     last = timestamp() - T_DATA
     try:
         while True:

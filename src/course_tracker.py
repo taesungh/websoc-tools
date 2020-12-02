@@ -6,7 +6,7 @@ import time
 # TERM = '2020-14'
 # COURSE_TITLE = DEPARTMENT + ' ' + COURSE_NUMBER
 
-T_QUERY = 30
+T_QUERY = 29
 
 def systime(): return time.strftime('%X')
 
@@ -39,7 +39,7 @@ class CourseTracker:
 
     def _interpret_listings(self) -> str:
         """turn course data into multi-line string of enrollment readings"""
-        return '\n'.join(f"{section['type']} {section['sec']} - {section['enr']} enr of {section['max']} max" if self._check(sec) for sec in self._course_data) + '\n'
+        return '\n'.join(f"{course['dept']} {course['num']} {course['type']} {course['sec']} - {course['enr']} enr of {course['max']} max" for course in self._course_data if self._check(course)) + '\n'
 
 
     def _print_course_data(self) -> print:
@@ -84,6 +84,7 @@ class CourseTracker:
         """once called, periodically runs course tracking system"""
         self._flagged = False
         while True:
+            time.sleep(self._interval)
             try:
                 self._get_course_data()
                 if not self._course_data:
@@ -93,5 +94,4 @@ class CourseTracker:
                     self._default_action()
             except(WebSOC_handler.WebSOCError):
                 print('WebSOC could not be reached')
-            time.sleep(self._interval)
 # end CourseTracker
